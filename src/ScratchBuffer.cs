@@ -26,8 +26,14 @@ internal sealed class ScratchBuffer : IDisposable
 
     public int Capacity => _rented?.Length ?? 0;
 
+    /// <summary>
+    /// The underlying buffer, including unused space at the end.
+    /// </summary>
     public Span<byte> BufferSpan => _rented ?? default;
 
+    /// <summary>
+    /// A span of the used portion of the buffer.
+    /// </summary>
     public Span<byte> Span => _count == 0 ? default : BufferSpan.Slice(0, _count);
 
     public void Add(byte value)

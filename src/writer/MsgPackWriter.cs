@@ -138,10 +138,59 @@ internal sealed partial class MsgPackWriter : ISerializer
 
     public void WriteSByte(sbyte b) => WriteI64(b);
 
+    private static readonly Encoding _utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     public void WriteString(string s)
     {
-        var bytes = Encoding.UTF8.GetBytes(s);
-        WriteUtf8String(bytes);
+        // We can write the string directly to the output buffer, but the string
+        // is length-prefixed and we don't know precisely how long it will be until
+        // we encode it. So we need to write space for the length prefix first, then
+        // write the string, and finally go back and fill in the length prefix.
+        var sLen = s.Length;
+        var maxByteCount = _utf8.GetMaxByteCount(sLen);
+        var bufferSize = checked(maxByteCount + 5 /* max length prefix */);
+        _out.EnsureCapacity(_out.Count + bufferSize);
+        int estimatedOffset = sLen switch {
+            <= 31 => 1,
+            <= 255 => 2,
+            <= 65535 => 3,
+            _ => 5
+        };
+        var currentSpan = _out.BufferSpan.Slice(_out.Count);
+        var u8Dest = currentSpan.Slice(estimatedOffset, maxByteCount);
+        int actualStrSize = _utf8.GetBytes(s, u8Dest);
+        // move body and write prefix
+        int actualOffset = actualStrSize switch {
+            <= 31 => 1,
+            <= 255 => 2,
+            <= 65535 => 3,
+            _ => 5
+        };
+		if (actualOffset < estimatedOffset)
+        {
+            u8Dest.CopyTo(currentSpan.Slice(actualOffset));
+        }
+
+        if (actualOffset == 1)
+        {
+            currentSpan[0] = (byte)(0xa0 | actualStrSize);
+        }
+        else if (actualOffset == 2)
+        {
+            currentSpan[0] = 0xd9;
+            currentSpan[1] = unchecked((byte)actualStrSize);
+		}
+		else if (actualStrSize == 3)
+		{
+			currentSpan[0] = 0xda;
+			WriteBigEndian((ushort)actualStrSize);
+		}
+		else
+		{
+			currentSpan[0] = 0xdb;
+			WriteBigEndian((uint)actualStrSize);
+		}
+        _out.Count += actualOffset + actualStrSize;
     }
 
     private void WriteUtf8String(ReadOnlySpan<byte> str)

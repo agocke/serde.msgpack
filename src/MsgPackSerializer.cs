@@ -31,4 +31,11 @@ public static class MsgPackSerializer
         using var reader = new MsgPackReader<ArrayBufReader>(byteBuffer);
         return proxy.Deserialize(reader);
     }
+    public static T Deserialize<T>(byte[] bytes)
+        where T : IDeserializeProvider<T>
+    {
+        var byteBuffer = new ArrayBufReader(bytes);
+        using var reader = new MsgPackReader<ArrayBufReader>(byteBuffer);
+        return T.DeserializeInstance.Deserialize(reader);
+    }
 }
