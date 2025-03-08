@@ -7,17 +7,11 @@ public static class MsgPackSerializer
 {
     public static byte[] Serialize<T>(T value)
         where T : ISerializeProvider<T>
-    {
-        using var buffer = new ScratchBuffer();
-        var writer = new MsgPackWriter(buffer);
-        var serializeObject = T.SerializeInstance;
-        serializeObject.Serialize(value, writer);
-        return buffer.Span.ToArray();
-    }
+        => Serialize(value, T.SerializeInstance);
 
     public static byte[] Serialize<T>(T value, ISerialize<T> proxy)
     {
-        using var buffer = new ScratchBuffer();
+        using var buffer = new ScratchBuffer(1024);
         var writer = new MsgPackWriter(buffer);
         proxy.Serialize(value, writer);
         return buffer.Span.ToArray();

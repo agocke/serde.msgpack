@@ -6,6 +6,16 @@ using System.Runtime.CompilerServices;
 
 internal sealed class ScratchBuffer : IDisposable
 {
+    public ScratchBuffer() { }
+    public ScratchBuffer(int capacity)
+    {
+        if (capacity < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(capacity));
+        }
+        _rented = ArrayPool<byte>.Shared.Rent(capacity);
+    }
+
     private byte[]? _rented;
     private int _count;
     public int Count
@@ -60,19 +70,21 @@ internal sealed class ScratchBuffer : IDisposable
 
     public void AddRange(ReadOnlySpan<byte> span)
     {
-        if (!span.IsEmpty)
-        {
-            var buffer = BufferSpan;
-            var count = Count;
-            if (buffer.Length - count < span.Length)
-            {
-                EnsureCapacity(checked(count + span.Length));
-                buffer = BufferSpan;
-            }
+        var buffer = GetAppendSpan(span.Length);
+        span.CopyTo(buffer);
+        Count += span.Length;
+    }
 
-            span.CopyTo(buffer[count..]);
-            Count = count + span.Length;
-        }
+    /// <summary>
+    /// Get a span into the buffer that starts at the end of the current
+    /// buffer and is large enough to hold the specified number of bytes.
+    /// The <see cref="Count"/> is not updated.
+    /// </summary>
+    public Span<byte> GetAppendSpan(int size)
+    {
+        var count = Count;
+        EnsureCapacity(count + size);
+        return BufferSpan.Slice(count, size);
     }
 
     public void EnsureCapacity(int capacity)
