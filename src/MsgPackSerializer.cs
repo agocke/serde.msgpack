@@ -15,8 +15,7 @@ public static class MsgPackSerializer
         return buffer.Span.ToArray();
     }
 
-    public static byte[] Serialize<T, U>(T value, U proxy)
-        where U : ISerialize<T>
+    public static byte[] Serialize<T>(T value, ISerialize<T> proxy)
     {
         using var buffer = new ScratchBuffer();
         var writer = new MsgPackWriter(buffer);

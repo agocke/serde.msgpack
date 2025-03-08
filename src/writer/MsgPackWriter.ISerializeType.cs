@@ -8,7 +8,7 @@ partial class MsgPackWriter : ISerializeType
     private void WritePropertyName(ISerdeInfo typeInfo, int fieldIndex)
     {
         var fieldName = typeInfo.GetFieldName(fieldIndex);
-        WriteUtf8String(fieldName);
+        WriteUtf8(fieldName);
     }
 
     void ISerializeType.End(ISerdeInfo typeInfo)

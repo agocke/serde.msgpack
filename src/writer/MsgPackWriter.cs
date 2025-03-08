@@ -159,65 +159,52 @@ internal sealed partial class MsgPackWriter : ISerializer
         var currentSpan = _out.BufferSpan.Slice(_out.Count);
         var u8Dest = currentSpan.Slice(estimatedOffset, maxByteCount);
         int actualStrSize = _utf8.GetBytes(s, u8Dest);
-        // move body and write prefix
-        int actualOffset = actualStrSize switch {
-            <= 31 => 1,
-            <= 255 => 2,
-            <= 65535 => 3,
-            _ => 5
-        };
+        // write prefix and move body if necessary
+        int actualOffset = WriteUtf8Header(actualStrSize, currentSpan);
 		if (actualOffset < estimatedOffset)
         {
             u8Dest.CopyTo(currentSpan.Slice(actualOffset));
         }
-
-        if (actualOffset == 1)
-        {
-            currentSpan[0] = (byte)(0xa0 | actualStrSize);
-        }
-        else if (actualOffset == 2)
-        {
-            currentSpan[0] = 0xd9;
-            currentSpan[1] = unchecked((byte)actualStrSize);
-		}
-		else if (actualStrSize == 3)
-		{
-			currentSpan[0] = 0xda;
-			WriteBigEndian((ushort)actualStrSize);
-		}
-		else
-		{
-			currentSpan[0] = 0xdb;
-			WriteBigEndian((uint)actualStrSize);
-		}
         _out.Count += actualOffset + actualStrSize;
     }
 
-    private void WriteUtf8String(ReadOnlySpan<byte> str)
+    private void WriteUtf8(ReadOnlySpan<byte> str)
     {
-        if (str.Length <= 31)
+        var count = _out.Count;
+        _out.EnsureCapacity(count + str.Length + 5);
+        var currentSpan = _out.BufferSpan.Slice(count);
+        int offset = WriteUtf8Header(str.Length, currentSpan);
+        str.CopyTo(currentSpan.Slice(offset));
+        _out.Count = count + offset + str.Length;
+    }
+
+    private static int WriteUtf8Header(int length, Span<byte> span)
+    {
+        int offset;
+        if (length <= 31)
         {
-            _out.Add((byte)(0xa0 | str.Length));
+            offset = 1;
+            span[0] = (byte)(0xa0 | length);
         }
-        else if (str.Length <= 0xff)
+        else if (length <= 0xff)
         {
-            _out.Add(0xd9);
-            _out.Add((byte)str.Length);
+            offset = 2;
+            span[0] = 0xd9;
+            span[1] = unchecked((byte)length);
         }
-        else if (str.Length <= 0xffff)
+        else if (length <= 0xffff)
         {
-            _out.Add(0xda);
-            WriteBigEndian((ushort)str.Length);
+            offset = 3;
+            span[0] = 0xda;
+            BinaryPrimitives.WriteUInt16BigEndian(span.Slice(1), (ushort)length);
         }
         else
         {
-            _out.Add(0xdb);
-            WriteBigEndian((uint)str.Length);
+            offset = 5;
+            span[0] = 0xdb;
+            BinaryPrimitives.WriteUInt32BigEndian(span.Slice(1), (uint)length);
         }
-        foreach (var b in str)
-        {
-            _out.Add(b);
-        }
+        return offset;
     }
 
     public ISerializeType WriteType(ISerdeInfo typeInfo)
@@ -270,8 +257,17 @@ internal sealed partial class MsgPackWriter : ISerializer
 
     private void WriteBigEndian(ushort value)
     {
-        _out.Add((byte)(value >> 8));
-        _out.Add((byte)value);
+        _out.EnsureCapacity(_out.Count + 2);
+        BinaryPrimitives.WriteUInt16BigEndian(
+            _out.BufferSpan.Slice(_out.Count),
+            value);
+        _out.Count += 2;
+    }
+
+    private static void WriteBigEndian(ushort value, Span<byte> span)
+    {
+        span[0] = (byte)(value >> 8);
+        span[1] = (byte)value;
     }
 
     private void WriteBigEndian(uint value)
