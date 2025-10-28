@@ -71,9 +71,10 @@ public partial class SerializeOracleTests
     [Fact]
     public void TestByteEnum()
     {
-        AssertMsgPackEqual(ByteEnum.A, ByteEnumProxy.Instance);
-        AssertMsgPackEqual(ByteEnum.B, ByteEnumProxy.Instance);
-        AssertMsgPackEqual(ByteEnum.C, ByteEnumProxy.Instance);
+        var proxy = SerializeProvider.GetSerialize<ByteEnum, ByteEnumProxy>();
+        AssertMsgPackEqual(ByteEnum.A, proxy);
+        AssertMsgPackEqual(ByteEnum.B, proxy);
+        AssertMsgPackEqual(ByteEnum.C, proxy);
     }
 
     [GenerateSerialize]
@@ -85,9 +86,10 @@ public partial class SerializeOracleTests
     [Fact]
     public void TestIntEnum()
     {
-        AssertMsgPackEqual(IntEnum.A, IntEnumProxy.Instance);
-        AssertMsgPackEqual(IntEnum.B, IntEnumProxy.Instance);
-        AssertMsgPackEqual(IntEnum.C, IntEnumProxy.Instance);
+        var proxy = SerializeProvider.GetSerialize<IntEnum, IntEnumProxy>();
+        AssertMsgPackEqual(IntEnum.A, proxy);
+        AssertMsgPackEqual(IntEnum.B, proxy);
+        AssertMsgPackEqual(IntEnum.C, proxy);
     }
 
     [GenerateSerialize]

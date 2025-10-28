@@ -112,14 +112,18 @@ partial class MsgPackReader<TReader>
             return v;
         }
 
-        int ITypeDeserializer.TryReadIndex(ISerdeInfo info, out string? errorName)
+        public int TryReadIndex(ISerdeInfo info)
         {
-            errorName = null;
             if (_index >= length)
             {
                 return ITypeDeserializer.EndOfType;
             }
             return _index;
+        }
+
+        (int, string?) ITypeDeserializer.TryReadIndexWithName(ISerdeInfo info)
+        {
+            return (TryReadIndex(info), null);
         }
 
         T ITypeDeserializer.ReadValue<T>(ISerdeInfo info, int index, IDeserialize<T> d)

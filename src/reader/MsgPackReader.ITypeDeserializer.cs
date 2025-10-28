@@ -44,33 +44,42 @@ partial class MsgPackReader<TReader>
         void ITypeDeserializer.SkipValue(ISerdeInfo info, int index)
             => throw new NotImplementedException();
 
-        int ITypeDeserializer.TryReadIndex(ISerdeInfo map, out string? errorName)
+
+        int ITypeDeserializer.TryReadIndex(ISerdeInfo info)
+        {
+            return TryReadIndexWithName(info).Item1;
+        }
+
+        (int, string? errorName) ITypeDeserializer.TryReadIndexWithName(ISerdeInfo info)
+        {
+            return TryReadIndexWithName(info);
+        }
+
+        private (int, string?) TryReadIndexWithName(ISerdeInfo map)
         {
             // Two options: we have a struct/class, or an enum
             if (map.Kind == InfoKind.CustomType)
             {
                 if (_count >= map.FieldCount)
                 {
-                    errorName = null;
-                    return ITypeDeserializer.EndOfType;
+                    return (ITypeDeserializer.EndOfType, null);
                 }
                 // custom types are serialized like maps with field names as keys
                 var span = deserializer.ReadUtf8Span();
                 int index = map.TryGetIndex(span);
-                errorName = index == ITypeDeserializer.IndexNotFound ? span.ToString() : null;
+                string? errorName = index == ITypeDeserializer.IndexNotFound ? span.ToString() : null;
                 _count++;
-                return index;
+                return (index, errorName);
             }
             else if (map.Kind == InfoKind.Enum)
             {
                 // Enums are serialized as the index of the enum member
-                errorName = null;
-                return deserializer.ReadI32();
+                return (deserializer.ReadI32(), null);
             }
             else
             {
-                errorName = "Expected a custom type or enum, found: " + map.Kind;
-                return ITypeDeserializer.IndexNotFound;
+                string? errorName = "Expected a custom type or enum, found: " + map.Kind;
+                return (ITypeDeserializer.IndexNotFound, errorName);
             }
         }
 

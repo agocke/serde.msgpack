@@ -72,9 +72,9 @@ public partial class RoundTripTests
     [Fact]
     public void TestByteEnum()
     {
-        AssertRoundTrip(ByteEnum.A, ByteEnumProxy.Instance);
-        AssertRoundTrip(ByteEnum.B, ByteEnumProxy.Instance);
-        AssertRoundTrip(ByteEnum.C, ByteEnumProxy.Instance);
+        AssertRoundTrip<ByteEnum, ByteEnumProxy, ByteEnumProxy>(ByteEnum.A);
+        AssertRoundTrip<ByteEnum, ByteEnumProxy, ByteEnumProxy>(ByteEnum.B);
+        AssertRoundTrip<ByteEnum, ByteEnumProxy, ByteEnumProxy>(ByteEnum.C);
     }
 
     [GenerateSerde]
@@ -86,9 +86,9 @@ public partial class RoundTripTests
     [Fact]
     public void TestIntEnum()
     {
-        AssertRoundTrip(IntEnum.A, IntEnumProxy.Instance);
-        AssertRoundTrip(IntEnum.B, IntEnumProxy.Instance);
-        AssertRoundTrip(IntEnum.C, IntEnumProxy.Instance);
+        AssertRoundTrip<IntEnum, IntEnumProxy, IntEnumProxy>(IntEnum.A);
+        AssertRoundTrip<IntEnum, IntEnumProxy, IntEnumProxy>(IntEnum.B);
+        AssertRoundTrip<IntEnum, IntEnumProxy, IntEnumProxy>(IntEnum.C);
     }
 
     [GenerateSerde]
