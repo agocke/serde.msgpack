@@ -1,5 +1,6 @@
 <Project>
     <PropertyGroup>
         <UseArtifactsOutput>true</UseArtifactsOutput>
+        <SerdeMsgPackPkgVersion>0.1.0-preview2</SerdeMsgPackPkgVersion>
     </PropertyGroup>
 </Project>
